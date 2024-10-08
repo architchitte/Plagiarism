@@ -2,187 +2,157 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.StringTokenizer;
+import java.util.*;      // Correct imports for HashSet, ArrayList, etc.
+import java.util.stream.Collectors;
 
-public class PlagiarismDetector {
+public class PlagiarismDetectorGUI extends JFrame {
 
-    private JFrame frame;
-    private JTextArea inputTextArea;
+    private JTextArea textArea1;
+    private JTextArea textArea2;
     private JLabel resultLabel;
-    private JLabel percentageLabel;
-    private JButton detectButton;
 
-    public PlagiarismDetector() {
+    public PlagiarismDetectorGUI() {
         // Set up the frame
-        frame = new JFrame("Plagiarism Detection Tool");
-        frame.setSize(400, 500);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLayout(new BorderLayout());
+        setTitle("Plagiarism Detector");
+        setSize(500, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
 
-        // Create input text area (smaller, in the center)
-        inputTextArea = new JTextArea(5, 30);
-        inputTextArea.setLineWrap(true);
-        inputTextArea.setWrapStyleWord(true);
-        inputTextArea.setFont(new Font("Arial", Font.PLAIN, 14));
-        inputTextArea.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-        inputTextArea.setBackground(Color.BLACK);
-        inputTextArea.setForeground(Color.WHITE);
-        JScrollPane scrollPane = new JScrollPane(inputTextArea);
+        // Create panels and layout
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout());
 
-        // Create detect button and customize it
-        detectButton = new JButton("Check Plagiarism");
-        detectButton.setFont(new Font("Arial", Font.BOLD, 16));
-        detectButton.setBackground(new Color(70, 130, 180));  // SteelBlue color
-        detectButton.setForeground(Color.WHITE);
-        detectButton.setFocusPainted(false);
-        detectButton.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY, 2));
+        // Create text areas for input
+        textArea1 = new JTextArea(5, 40);
+        textArea2 = new JTextArea(5, 40);
+        textArea1.setLineWrap(true);
+        textArea2.setLineWrap(true);
+        textArea1.setWrapStyleWord(true);
+        textArea2.setWrapStyleWord(true);
 
-        // Center the button in a JPanel
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(Color.BLACK);
-        buttonPanel.add(detectButton);
+        // Create labels and buttons
+        JLabel label1 = new JLabel("Enter first text:");
+        JLabel label2 = new JLabel("Enter second text:");
+        resultLabel = new JLabel("Result will appear here");
+        JButton detectButton = new JButton("Detect Plagiarism");
 
-        // Create result labels and customize them
-        resultLabel = new JLabel("Plagiarism Detection Status: ");
-        resultLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        resultLabel.setForeground(Color.WHITE);
+        // Add action listener to the button
+        detectButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                detectPlagiarism();
+            }
+        });
 
-        percentageLabel = new JLabel("Similarity Percentage: ");
-        percentageLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        percentageLabel.setForeground(Color.WHITE);
+        // Add components to panel
+        panel.add(label1, BorderLayout.NORTH);
+        panel.add(new JScrollPane(textArea1), BorderLayout.CENTER);
+        panel.add(label2, BorderLayout.WEST);
+        panel.add(new JScrollPane(textArea2), BorderLayout.CENTER);
+        panel.add(detectButton, BorderLayout.SOUTH);
+        panel.add(resultLabel, BorderLayout.SOUTH);
 
-        // Add components to frame
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.BLACK);
-        JLabel titleLabel = new JLabel("Enter Text Below:", SwingConstants.CENTER);
-        titleLabel.setForeground(Color.WHITE);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        panel.add(titleLabel, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
+        // Set layout for the content
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.add(label1);
+        content.add(new JScrollPane(textArea1));
+        content.add(label2);
+        content.add(new JScrollPane(textArea2));
+        content.add(detectButton);
+        content.add(resultLabel);
 
-        frame.add(panel, BorderLayout.CENTER);
-
-        JPanel resultPanel = new JPanel(new GridLayout(2, 1));
-        resultPanel.setBackground(Color.BLACK);
-        resultPanel.add(resultLabel);
-        resultPanel.add(percentageLabel);
-        frame.add(resultPanel, BorderLayout.NORTH);  // Move results towards the top
-
-        // Add action listener for the button
-        detectButton.addActionListener(new DetectButtonListener());
-
-        // Make the frame visible
-        frame.setVisible(true);
+        setContentPane(content);
     }
 
-    // Action listener for detecting plagiarism
-    private class DetectButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            String inputText = inputTextArea.getText();
-            if (inputText.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "Please enter some text to check.");
-            } else {
-                // Perform plagiarism check
-                int percentage = checkPlagiarism(inputText);
+    private void detectPlagiarism() {
+        String text1 = textArea1.getText();
+        String text2 = textArea2.getText();
 
-                if (percentage > 0) {
-                    resultLabel.setText("Plagiarism Detected!");
-                    resultLabel.setForeground(Color.RED);
-                } else {
-                    resultLabel.setText("No Plagiarism Detected.");
-                    resultLabel.setForeground(Color.GREEN);
-                }
+        double similarityScore = Math.floor(calculateSimilarity(text1, text2) * 100);
+        String resultText = "Similarity score: " + similarityScore + "%";
 
-                percentageLabel.setText("Similarity Percentage: " + percentage + "%");
-            }
+        if (similarityScore > 50) {
+            resultText += " - Plagiarism detected!";
+        } else {
+            resultText += " - No plagiarism detected.";
         }
+
+        resultLabel.setText(resultText);
     }
 
-    // Data structure for storing word counts
-    static class HashMapWithCollision {
-        private static final int TABLE_SIZE = 100;
-        private LinkedList<Entry>[] table;
+    private double calculateSimilarity(String text1, String text2) {
+        java.util.List<String> tokens1 = tokenize(text1);   // Explicitly specify java.util.List
+        java.util.List<String> tokens2 = tokenize(text2);
 
-        public HashMapWithCollision() {
-            table = new LinkedList[TABLE_SIZE];
-            for (int i = 0; i < TABLE_SIZE; i++) {
-                table[i] = new LinkedList<>();
-            }
-        }
+        java.util.List<String> filteredTokens1 = removeStopwords(tokens1);
+        java.util.List<String> filteredTokens2 = removeStopwords(tokens2);
 
-        // Entry class for LinkedList
-        static class Entry {
-            String word;
-            int count;
+        java.util.List<String> ngrams1 = generateNgrams(filteredTokens1, 2);
+        java.util.List<String> ngrams2 = generateNgrams(filteredTokens2, 2);
 
-            Entry(String word) {
-                this.word = word;
-                this.count = 1;
-            }
-        }
-
-        // Hash function
-        private int hashFunction(String word) {
-            return word.hashCode() % TABLE_SIZE;
-        }
-
-        // Insert word into HashMap
-        public void insertWord(String word) {
-            int index = hashFunction(word);
-            for (Entry entry : table[index]) {
-                if (entry.word.equals(word)) {
-                    entry.count++;
-                    return;
-                }
-            }
-            table[index].add(new Entry(word));
-        }
-
-        // Get word count from the table
-        public int getWordCount(String word) {
-            int index = hashFunction(word);
-            for (Entry entry : table[index]) {
-                if (entry.word.equals(word)) {
-                    return entry.count;
-                }
-            }
-            return 0;
-        }
+        return cosineSimilarity(ngrams1, ngrams2);
     }
 
-    // Method to check plagiarism
-    private int checkPlagiarism(String text) {
-        HashMapWithCollision wordCountMap = new HashMapWithCollision();
-        StringTokenizer tokenizer = new StringTokenizer(text, " ,.-\n");
-        int totalWords = 0, plagiarizedWords = 0;
+    private java.util.List<String> tokenize(String text) {
+        return Arrays.asList(text.split("\\s+"));
+    }
 
-        // Process each word
-        while (tokenizer.hasMoreTokens()) {
-            String word = tokenizer.nextToken().toLowerCase();  // Case insensitive
-            totalWords++;
-            wordCountMap.insertWord(word);
+    private java.util.List<String> removeStopwords(java.util.List<String> tokens) {
+        java.util.List<String> stopwords = Arrays.asList("the", "and", "is", "in", "at", "of", "on");
+        return tokens.stream().filter(token -> !stopwords.contains(token)).collect(Collectors.toList());
+    }
+
+    private java.util.List<String> generateNgrams(java.util.List<String> tokens, int n) {
+        java.util.List<String> ngrams = new ArrayList<>();
+        for (int i = 0; i <= tokens.size() - n; i++) {
+            ngrams.add(String.join(" ", tokens.subList(i, i + n)));
+        }
+        return ngrams;
+    }
+
+    private double cosineSimilarity(java.util.List<String> ngrams1, java.util.List<String> ngrams2) {
+        Set<String> allNgrams = new HashSet<>(ngrams1);
+        allNgrams.addAll(ngrams2);
+
+        int[] ngramCounts1 = new int[allNgrams.size()];
+        int[] ngramCounts2 = new int[allNgrams.size()];
+
+        Map<String, Integer> ngramToIndex = new HashMap<>();
+        int index = 0;
+        for (String ngram : allNgrams) {
+            ngramToIndex.put(ngram, index++);
         }
 
-        // Count plagiarized words (words with multiple occurrences)
-        StringTokenizer tokenizerCheck = new StringTokenizer(text, " ,.-\n");
-        while (tokenizerCheck.hasMoreTokens()) {
-            String word = tokenizerCheck.nextToken().toLowerCase();
-            if (wordCountMap.getWordCount(word) > 1) {
-                plagiarizedWords++;
-            }
+        for (String ngram : ngrams1) {
+            ngramCounts1[ngramToIndex.get(ngram)]++;
         }
 
-        // Calculate plagiarism percentage
-        if (totalWords == 0) return 0;
-        return (plagiarizedWords * 100) / totalWords;
+        for (String ngram : ngrams2) {
+            ngramCounts2[ngramToIndex.get(ngram)]++;
+        }
+
+        double dotProduct = 0;
+        double magnitude1 = 0;
+        double magnitude2 = 0;
+
+        for (int i = 0; i < ngramCounts1.length; i++) {
+            dotProduct += ngramCounts1[i] * ngramCounts2[i];
+            magnitude1 += ngramCounts1[i] * ngramCounts1[i];
+            magnitude2 += ngramCounts2[i] * ngramCounts2[i];
+        }
+
+        if (magnitude1 == 0 || magnitude2 == 0) {
+            return 0.0; // Return 0 similarity if either vector is zero
+        }
+
+        return dotProduct / (Math.sqrt(magnitude1) * Math.sqrt(magnitude2));
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(PlagiarismDetector::new);
+        SwingUtilities.invokeLater(() -> {
+            PlagiarismDetectorGUI frame = new PlagiarismDetectorGUI();
+            frame.setVisible(true);
+        });
     }
 }
